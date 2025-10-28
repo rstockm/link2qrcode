@@ -17,8 +17,9 @@ export default {
         const links = $elem.find("a[href]:not(.mention):not(.hashtag)").toArray();
         
         // Settings laden
-        const showExternalOnly = api.container.lookup("site:main").siteSettings.qr_code_show_external_only;
-        const buttonText = api.container.lookup("site:main").siteSettings.qr_code_button_text || "Links als QR-Codes anzeigen";
+        const siteSettings = api.container.lookup("service:site-settings");
+        const showExternalOnly = siteSettings.qr_code_show_external_only;
+        const buttonText = siteSettings.qr_code_button_text || "Links als QR-Codes anzeigen";
         
         // Filtere Links basierend auf Settings
         const validLinks = links.filter(link => {
@@ -71,8 +72,11 @@ function showQRCodeModal(links, api) {
   $(".qr-code-modal").remove();
   
   // Settings laden
-  const qrSize = api.container.lookup("site:main").siteSettings.qr_code_size || 200;
-  const errorCorrectionLevel = api.container.lookup("site:main").siteSettings.qr_code_error_correction || "M";
+  const siteSettings = api.container.lookup("service:site-settings");
+  const qrSize = parseInt(siteSettings.qr_code_size) || 200;
+  const errorCorrectionLevel = siteSettings.qr_code_error_correction || "M";
+  
+  console.log("QR Code Settings:", { qrSize, errorCorrectionLevel });
 
   // Erstelle Modal
   const modal = $('<div class="qr-code-modal"></div>');
