@@ -96,17 +96,25 @@ function showQRCodeModal(links, api) {
   modalHeader.append(title);
   modalHeader.append(closeButton);
 
-  // Entferne Duplikate basierend auf URL
-  const uniqueLinks = [];
-  const seenUrls = new Set();
+  // Entferne Duplikate basierend auf URL, bevorzuge längeren/aussagekräftigeren Text
+  const urlMap = new Map();
   
   links.forEach((link) => {
     const url = link.getAttribute("href");
-    if (!seenUrls.has(url)) {
-      seenUrls.add(url);
-      uniqueLinks.push(link);
+    const linkText = $(link).text().trim();
+    
+    if (!urlMap.has(url)) {
+      urlMap.set(url, link);
+    } else {
+      // Bevorzuge Link mit längerem Text (meist aussagekräftiger)
+      const existingText = $(urlMap.get(url)).text().trim();
+      if (linkText.length > existingText.length) {
+        urlMap.set(url, link);
+      }
     }
   });
+  
+  const uniqueLinks = Array.from(urlMap.values());
 
   // Generiere QR-Codes für jeden eindeutigen Link
   uniqueLinks.forEach((link, index) => {
