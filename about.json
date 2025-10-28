@@ -3,11 +3,11 @@
   "about_url": "https://github.com/rstockm/link2qrcode",
   "license_url": "https://github.com/rstockm/link2qrcode/blob/main/LICENSE",
   "component": true,
-  "authors": "Robert Stockmann",
+  "authors": "Ralf Stockmann",
   "theme_version": "1.0.0",
   "minimum_discourse_version": "3.0.0",
   "maximum_discourse_version": null,
   "assets": {
-    "qrcode-generator": "assets/javascripts/qrcode-generator.js"
+    "qrcode-generator.js": "assets/javascripts/qrcode-generator.js"
   }
 }
