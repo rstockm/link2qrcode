@@ -133,14 +133,18 @@ function showQRCodeModal(links, api) {
       qr.addData(url);
       qr.make();
       
-      // Berechne Zellgröße basierend auf gewünschter Gesamt-Größe
-      const moduleCount = qr.getModuleCount();
-      const cellSize = Math.floor(qrSize / (moduleCount + 4)); // +4 für Margin
+      // Erstelle SVG mit fester Zellgröße
+      const cellSize = 4;
       const margin = 2;
       
       qrCanvas.innerHTML = qr.createSvgTag(cellSize, margin);
-      qrCanvas.style.width = qrSize + "px";
-      qrCanvas.style.height = qrSize + "px";
+      
+      // Setze SVG-Größe direkt über Attribute
+      const svg = qrCanvas.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('width', qrSize + 'px');
+        svg.setAttribute('height', qrSize + 'px');
+      }
     } catch (error) {
       console.error("Fehler beim Generieren des QR-Codes:", error);
       qrCanvas.innerHTML = '<div class="qr-error">QR-Code konnte nicht generiert werden</div>';
