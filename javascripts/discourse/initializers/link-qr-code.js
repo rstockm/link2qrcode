@@ -3,7 +3,7 @@ import { withPluginApi } from "discourse/lib/plugin-api";
 export default {
   name: "link-qr-code",
 
-  initialize() {
+  initialize(container) {
     withPluginApi("0.8.31", (api) => {
       api.decorateCooked(($elem, helper) => {
         if (!helper) return;
@@ -16,10 +16,9 @@ export default {
         // Finde alle Links (außer Mentions und Hashtags)
         const links = $elem.find("a[href]:not(.mention):not(.hashtag)").toArray();
         
-        // Settings laden - Theme Settings haben Prefix "theme_"
-        const siteSettings = api.container.lookup("service:site-settings");
-        const showExternalOnly = siteSettings.theme_qr_code_show_external_only || siteSettings.qr_code_show_external_only;
-        const buttonText = siteSettings.theme_qr_code_button_text || siteSettings.qr_code_button_text || "Links als QR-Codes anzeigen";
+        // Settings laden - aus globalem settings Objekt (Theme Component)
+        const showExternalOnly = (typeof settings !== 'undefined' && settings.qr_code_show_external_only) || false;
+        const buttonText = (typeof settings !== 'undefined' && settings.qr_code_button_text) || "Links als QR-Codes anzeigen";
         
         // Filtere Links basierend auf Settings
         const validLinks = links.filter(link => {
@@ -57,7 +56,7 @@ export default {
 
         button.on("click", (e) => {
           e.preventDefault();
-          showQRCodeModal(validLinks, api);
+          showQRCodeModal(validLinks);
         });
 
         buttonContainer.append(button);
@@ -67,20 +66,20 @@ export default {
   },
 };
 
-function showQRCodeModal(links, api) {
+function showQRCodeModal(links) {
   // Entferne eventuell bereits existierende Modals
   $(".qr-code-modal").remove();
   
-  // Settings laden - Theme Settings haben Prefix "theme_"
-  const siteSettings = api.container.lookup("service:site-settings");
-  const qrSize = parseInt(siteSettings.theme_qr_code_size || siteSettings.qr_code_size) || 200;
-  const errorCorrectionLevel = siteSettings.theme_qr_code_error_correction || siteSettings.qr_code_error_correction || "M";
+  // Settings laden - aus globalem settings Objekt (Theme Component)
+  const qrSize = (typeof settings !== 'undefined' && settings.qr_code_size) ? parseInt(settings.qr_code_size) : 200;
+  const errorCorrectionLevel = (typeof settings !== 'undefined' && settings.qr_code_error_correction) || "M";
   
-  console.log("QR Code Settings - Raw:", {
-    theme_qr_code_size: siteSettings.theme_qr_code_size,
-    qr_code_size: siteSettings.qr_code_size,
+  console.log("QR Code Settings - Global settings object:", {
+    settings_available: typeof settings !== 'undefined',
+    qr_code_size: typeof settings !== 'undefined' ? settings.qr_code_size : 'undefined',
     parsed_qrSize: qrSize,
-    errorCorrectionLevel: errorCorrectionLevel
+    errorCorrectionLevel: errorCorrectionLevel,
+    all_settings: typeof settings !== 'undefined' ? Object.keys(settings) : 'no settings'
   });
 
   // Erstelle Modal
