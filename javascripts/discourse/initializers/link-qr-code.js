@@ -96,8 +96,20 @@ function showQRCodeModal(links, api) {
   modalHeader.append(title);
   modalHeader.append(closeButton);
 
-  // Generiere QR-Codes für jeden Link
-  links.forEach((link, index) => {
+  // Entferne Duplikate basierend auf URL
+  const uniqueLinks = [];
+  const seenUrls = new Set();
+  
+  links.forEach((link) => {
+    const url = link.getAttribute("href");
+    if (!seenUrls.has(url)) {
+      seenUrls.add(url);
+      uniqueLinks.push(link);
+    }
+  });
+
+  // Generiere QR-Codes für jeden eindeutigen Link
+  uniqueLinks.forEach((link, index) => {
     const url = link.getAttribute("href");
     const linkText = $(link).text().trim() || url;
     
