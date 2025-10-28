@@ -1,0 +1,34 @@
+qr_code_show_external_only:
+  default: false
+  type: bool
+  description:
+    en: "Only show QR codes for external links (links pointing outside the forum)"
+    de: "Nur QR-Codes für externe Links anzeigen (Links außerhalb des Forums)"
+
+qr_code_size:
+  default: 200
+  type: integer
+  min: 100
+  max: 400
+  description:
+    en: "Size of the QR code in pixels"
+    de: "Größe des QR-Codes in Pixeln"
+
+qr_code_button_text:
+  default: "Links als QR-Codes anzeigen"
+  type: string
+  description:
+    en: "Text for the button that opens the QR code modal"
+    de: "Text für den Button, der das QR-Code Modal öffnet"
+
+qr_code_error_correction:
+  default: "M"
+  type: enum
+  choices:
+    - L
+    - M
+    - Q
+    - H
+  description:
+    en: "Error correction level (L=7%, M=15%, Q=25%, H=30%)"
+    de: "Fehlerkorrektur-Level (L=7%, M=15%, Q=25%, H=30%)"
