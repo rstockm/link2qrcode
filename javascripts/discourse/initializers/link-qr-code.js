@@ -16,10 +16,10 @@ export default {
         // Finde alle Links (außer Mentions und Hashtags)
         const links = $elem.find("a[href]:not(.mention):not(.hashtag)").toArray();
         
-        // Settings laden
+        // Settings laden - Theme Settings haben Prefix "theme_"
         const siteSettings = api.container.lookup("service:site-settings");
-        const showExternalOnly = siteSettings.qr_code_show_external_only;
-        const buttonText = siteSettings.qr_code_button_text || "Links als QR-Codes anzeigen";
+        const showExternalOnly = siteSettings.theme_qr_code_show_external_only || siteSettings.qr_code_show_external_only;
+        const buttonText = siteSettings.theme_qr_code_button_text || siteSettings.qr_code_button_text || "Links als QR-Codes anzeigen";
         
         // Filtere Links basierend auf Settings
         const validLinks = links.filter(link => {
@@ -71,12 +71,17 @@ function showQRCodeModal(links, api) {
   // Entferne eventuell bereits existierende Modals
   $(".qr-code-modal").remove();
   
-  // Settings laden
+  // Settings laden - Theme Settings haben Prefix "theme_"
   const siteSettings = api.container.lookup("service:site-settings");
-  const qrSize = parseInt(siteSettings.qr_code_size) || 200;
-  const errorCorrectionLevel = siteSettings.qr_code_error_correction || "M";
+  const qrSize = parseInt(siteSettings.theme_qr_code_size || siteSettings.qr_code_size) || 200;
+  const errorCorrectionLevel = siteSettings.theme_qr_code_error_correction || siteSettings.qr_code_error_correction || "M";
   
-  console.log("QR Code Settings:", { qrSize, errorCorrectionLevel });
+  console.log("QR Code Settings - Raw:", {
+    theme_qr_code_size: siteSettings.theme_qr_code_size,
+    qr_code_size: siteSettings.qr_code_size,
+    parsed_qrSize: qrSize,
+    errorCorrectionLevel: errorCorrectionLevel
+  });
 
   // Erstelle Modal
   const modal = $('<div class="qr-code-modal"></div>');
