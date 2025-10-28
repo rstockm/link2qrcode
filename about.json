@@ -5,8 +5,5 @@
   "component": true,
   "authors": "Ralf Stockmann",
   "theme_version": "1.0.0",
-  "minimum_discourse_version": "3.0.0",
-  "assets": {
-    "qrcode-generator.js": "javascripts/vendor/qrcode-generator.js"
-  }
+  "minimum_discourse_version": "3.0.0"
 }
