@@ -73,14 +73,6 @@ function showQRCodeModal(links) {
   // Settings laden - aus globalem settings Objekt (Theme Component)
   const qrSize = (typeof settings !== 'undefined' && settings.qr_code_size) ? parseInt(settings.qr_code_size) : 200;
   const errorCorrectionLevel = (typeof settings !== 'undefined' && settings.qr_code_error_correction) || "M";
-  
-  console.log("QR Code Settings - Global settings object:", {
-    settings_available: typeof settings !== 'undefined',
-    qr_code_size: typeof settings !== 'undefined' ? settings.qr_code_size : 'undefined',
-    parsed_qrSize: qrSize,
-    errorCorrectionLevel: errorCorrectionLevel,
-    all_settings: typeof settings !== 'undefined' ? Object.keys(settings) : 'no settings'
-  });
 
   // Erstelle Modal
   const modal = $('<div class="qr-code-modal"></div>');
