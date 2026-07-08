@@ -4,7 +4,7 @@
   "license_url": "https://github.com/rstockm/link2qrcode/blob/main/LICENSE",
   "component": true,
   "authors": "Ralf Stockmann",
-  "theme_version": "1.3.0",
+  "theme_version": "1.3.1",
   "minimum_discourse_version": "3.4.0",
   "assets": {
     "icons-sprite": "assets/icons-sprite.svg",

@@ -170,7 +170,7 @@ Normalization rejects non-HTTP(S) URLs, fragments, overlong URLs, and optionally
 
 - Library loaded on demand via `loadScript(settings.theme_uploads.qrcode_generator)`.
 - Promise cached in module scope to avoid duplicate fetches.
-- Each QR code is rendered as an `<img>` using `qrcode.createDataURL()` (GIF data URL); size set via `width` / `height` attributes and an `alt` label.
+- Each QR code is rendered as an `<img>` using `qrcode.createDataURL(cellSize, margin)`. The `cellSize` is derived from the admin `qr_code_size` setting and the QR module count so the image is generated at full resolution (not upscaled in HTML).
 - User-visible link text and URLs are inserted with `textContent` (not HTML interpolation).
 
 #### PNG export (copy and download)

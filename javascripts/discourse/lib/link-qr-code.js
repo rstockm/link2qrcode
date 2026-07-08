@@ -5,6 +5,7 @@ import loadScript from "discourse/lib/load-script";
 const MAX_QR_LINKS = 50;
 const MAX_URL_LENGTH = 2048;
 const VALID_ERROR_CORRECTION_LEVELS = ["L", "M", "Q", "H"];
+const QR_CODE_MARGIN = 2;
 
 let qrcodeLibraryPromise;
 
@@ -268,11 +269,14 @@ function createQRCodeItem(link) {
     qr.addData(link.url);
     qr.make();
 
-    const qrSize = getQRCodeSize();
+    const moduleCount = qr.getModuleCount();
+    const cellSize = getQRCodeCellSize(moduleCount);
+    const renderedSize = getQRCodeRenderedSize(moduleCount, cellSize);
+
     qrImage = createElement("img", "qr-code-image");
-    qrImage.src = qr.createDataURL(4, 2);
-    qrImage.width = qrSize;
-    qrImage.height = qrSize;
+    qrImage.src = qr.createDataURL(cellSize, QR_CODE_MARGIN);
+    qrImage.width = renderedSize;
+    qrImage.height = renderedSize;
     qrImage.alt = `QR-Code: ${link.text}`;
     qrCanvas.append(qrImage);
   } catch (error) {
@@ -380,7 +384,7 @@ async function imgToPngBlob(img) {
     });
   }
 
-  const qrSize = img.width || getQRCodeSize();
+  const qrSize = img.naturalWidth || img.width || getQRCodeSize();
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
 
@@ -460,6 +464,17 @@ function getQRCodeSize() {
   }
 
   return Math.min(Math.max(qrSize, 100), 400);
+}
+
+function getQRCodeCellSize(moduleCount) {
+  const qrSize = getQRCodeSize();
+  const idealCellSize = (qrSize - 2 * QR_CODE_MARGIN) / moduleCount;
+
+  return Math.max(1, Math.round(idealCellSize));
+}
+
+function getQRCodeRenderedSize(moduleCount, cellSize) {
+  return moduleCount * cellSize + 2 * QR_CODE_MARGIN;
 }
 
 function getErrorCorrectionLevel() {
