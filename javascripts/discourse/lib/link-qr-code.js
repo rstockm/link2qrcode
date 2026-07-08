@@ -261,6 +261,7 @@ function createQRCodeItem(link) {
   const linkInfo = createElement("div", "qr-link-info");
   const linkTitle = createElement("div", "qr-link-title");
   const linkUrl = createElement("div", "qr-link-url");
+  let svg = null;
 
   try {
     const qr = qrcode(0, getErrorCorrectionLevel());
@@ -269,7 +270,7 @@ function createQRCodeItem(link) {
 
     qrCanvas.innerHTML = qr.createSvgTag(4, 2);
 
-    const svg = qrCanvas.querySelector("svg");
+    svg = qrCanvas.querySelector("svg");
     const qrSize = getQRCodeSize();
 
     if (svg) {
@@ -287,12 +288,186 @@ function createQRCodeItem(link) {
   linkUrl.textContent = link.url;
 
   qrCodeContainer.append(qrCanvas);
+
+  if (svg) {
+    qrCodeContainer.append(createQRCodeActions(svg, link));
+  }
+
   linkInfo.append(linkTitle);
   linkInfo.append(linkUrl);
   qrItem.append(qrCodeContainer);
   qrItem.append(linkInfo);
 
   return qrItem;
+}
+
+function createQRCodeActions(svg, link) {
+  const actions = createElement("div", "qr-code-actions");
+  const copyButton = createActionButton(
+    "In Zwischenablage kopieren",
+    "qr-code-copy-button btn-default"
+  );
+  const downloadButton = createActionButton(
+    "Als PNG speichern",
+    "qr-code-download-button btn-default"
+  );
+
+  copyButton.addEventListener("click", async () => {
+    setActionButtonState(copyButton, "loading", "Wird kopiert…");
+
+    try {
+      const blob = await svgToPngBlob(svg);
+      const copied = await copyPngToClipboard(blob);
+
+      if (copied) {
+        setActionButtonState(copyButton, "success", "Kopiert!");
+      } else {
+        setActionButtonState(copyButton, "error", "Kopieren nicht unterstützt");
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Fehler beim Kopieren des QR-Codes:", error);
+      setActionButtonState(copyButton, "error", "Kopieren fehlgeschlagen");
+    }
+  });
+
+  downloadButton.addEventListener("click", async () => {
+    setActionButtonState(downloadButton, "loading", "Wird gespeichert…");
+
+    try {
+      const blob = await svgToPngBlob(svg);
+      downloadPng(blob, getQrFilename(link));
+      setActionButtonState(downloadButton, "success", "Gespeichert!");
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Fehler beim Speichern des QR-Codes:", error);
+      setActionButtonState(downloadButton, "error", "Speichern fehlgeschlagen");
+    }
+  });
+
+  actions.append(copyButton);
+  actions.append(downloadButton);
+
+  return actions;
+}
+
+function createActionButton(label, className) {
+  const button = createElement("button", className);
+  button.type = "button";
+  button.textContent = label;
+  button.dataset.defaultLabel = label;
+  return button;
+}
+
+function setActionButtonState(button, state, message) {
+  button.disabled = state === "loading";
+  button.classList.toggle("qr-code-action--success", state === "success");
+  button.classList.toggle("qr-code-action--error", state === "error");
+  button.textContent = message;
+
+  if (state === "success" || state === "error") {
+    window.setTimeout(() => {
+      button.disabled = false;
+      button.classList.remove("qr-code-action--success", "qr-code-action--error");
+      button.textContent = button.dataset.defaultLabel;
+    }, 2000);
+  }
+}
+
+async function svgToPngBlob(svg) {
+  const qrSize =
+    Number.parseInt(svg.getAttribute("width"), 10) ||
+    Number.parseInt(svg.getAttribute("height"), 10) ||
+    getQRCodeSize();
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("Canvas not supported");
+  }
+
+  canvas.width = qrSize;
+  canvas.height = qrSize;
+
+  const svgMarkup = new XMLSerializer().serializeToString(svg);
+  const svgUrl = URL.createObjectURL(
+    new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" })
+  );
+
+  try {
+    const image = await loadImage(svgUrl);
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, qrSize, qrSize);
+    context.drawImage(image, 0, 0, qrSize, qrSize);
+
+    const blob = await canvasToBlob(canvas, "image/png");
+
+    if (!blob) {
+      throw new Error("PNG conversion failed");
+    }
+
+    return blob;
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("SVG render failed"));
+    image.src = url;
+  });
+}
+
+function canvasToBlob(canvas, type) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Blob conversion failed"));
+      }
+    }, type);
+  });
+}
+
+async function copyPngToClipboard(blob) {
+  if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+    return false;
+  }
+
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "image/png": Promise.resolve(blob),
+      }),
+    ]);
+    return true;
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("Clipboard API failed:", error);
+    return false;
+  }
+}
+
+function downloadPng(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function getQrFilename(link) {
+  try {
+    const hostname = new URL(link.url).hostname.replace(/[^a-z0-9.-]+/gi, "-");
+    return `qr-code-${hostname || "link"}.png`;
+  } catch {
+    return "qr-code.png";
+  }
 }
 
 function getQRCodeSize() {

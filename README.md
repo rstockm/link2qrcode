@@ -12,7 +12,7 @@ A [Discourse](https://www.discourse.org/) theme component that adds a post-menu 
 
 ### What it does
 
-When a post contains at least one eligible link, a QR code icon appears in the post action menu (next to the copy-link button). Clicking it opens a modal listing each unique link with its label, URL, and a scannable QR code.
+When a post contains at least one eligible link, a QR code icon appears in the post action menu (next to the copy-link button). Clicking it opens a modal listing each unique link with its label, URL, and a scannable QR code. Each QR code can be copied to the clipboard as a PNG or saved as a PNG file.
 
 Typical use cases:
 
@@ -78,6 +78,9 @@ Up to **50 links** per post and **2048 characters** per URL are processed.
 - **Button location:** Post action menu, immediately to the right of the copy-link icon.
 - **Button appearance:** QR icon only; full text appears as tooltip / `aria-label` (e.g. `Links als QR-Codes anzeigen (2)`).
 - **Modal:** Lists deduplicated links; closes via the X button, clicking the overlay, or pressing Escape.
+- **Per QR code:** Two action buttons below each code:
+  - **Copy to clipboard** — saves the QR code as a PNG image to the system clipboard (requires a secure context / HTTPS).
+  - **Save as PNG** — downloads the QR code as `qr-code-{hostname}.png`.
 - **Responsive:** Modal layout adapts on narrow screens; styling uses Discourse CSS variables for theme compatibility.
 
 ### Troubleshooting
@@ -88,6 +91,7 @@ Up to **50 links** per post and **2048 characters** per URL are processed.
 | Button missing on onebox-only posts | Theme not updated after a fix | Update component and hard-refresh |
 | Icon shows as empty circle | Custom icon sprite not loaded | Re-install/update theme; verify `assets/icons-sprite.svg` is present |
 | Modal opens but no QR codes | JavaScript library failed to load | Check browser console; verify `assets/qrcode-generator.js` in theme assets |
+| Copy to clipboard fails | Browser lacks Clipboard API support, or forum not served over HTTPS | Use **Save as PNG** instead; ensure the site uses HTTPS |
 | Button in wrong position | Custom `post_menu` site setting order | Component pins placement relative to `copyLink` and `edit`; report conflicts if another plugin overrides the same menu slot |
 
 For bugs and feature requests, open an issue on GitHub.
@@ -115,7 +119,7 @@ This section documents the implementation for external reviewers, contributors, 
 ┌──────────────────────────▼──────────────────────────────────┐
 │  link-qr-code.js (lib)                                      │
 │    getLinksForPost() → dedupe → loadScript(qrcode lib)      │
-│    → render modal DOM → qrcode-generator SVG per URL        │
+│    → render modal DOM → SVG per URL → PNG export actions    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -168,6 +172,15 @@ Normalization rejects non-HTTP(S) URLs, fragments, overlong URLs, and optionally
 - SVG output from `qrcode-generator`; size applied via SVG `width` / `height` attributes.
 - User-visible link text and URLs are inserted with `textContent` (not HTML interpolation).
 
+#### PNG export (copy and download)
+
+Each successfully rendered QR code exposes two action buttons:
+
+1. **Copy to clipboard** — converts the SVG to a PNG blob via an off-screen `<canvas>`, then writes it with `navigator.clipboard.write()` and `ClipboardItem` (blob wrapped in `Promise.resolve()` for Safari compatibility). Requires HTTPS and a browser that supports image clipboard operations.
+2. **Save as PNG** — uses the same PNG blob and triggers a client-side download via a temporary `<a download>` element. Filename pattern: `qr-code-{hostname}.png`.
+
+Buttons show inline feedback (`Copied!`, `Saved!`, or an error state) for two seconds. Export actions are omitted when QR generation fails for a given link.
+
 #### Custom icon
 
 Discourse's default icon subset does not include `qrcode`. The component ships `assets/icons-sprite.svg` registered as `icons-sprite` in `about.json`, exposing symbol id `link2qrcode-qrcode`.
@@ -183,6 +196,7 @@ Reference: [Discourse custom icons in themes](https://meta.discourse.org/t/intro
 | DoS via many/long links | Hard limits: 50 links, 2048 chars/URL | Large posts could still cause brief client CPU use on modal open |
 | Third-party dependencies | Single vendored file in theme assets; no CDN | Supply-chain risk limited to bundled `qrcode-generator` |
 | CSP | Assets served from theme; lazy load via Discourse `loadScript` | Should comply with standard Discourse CSP |
+| Clipboard export | PNG written only to local clipboard via browser API; no server upload | Requires secure context; unsupported browsers fall back to download-only |
 
 Reviewers should verify the vendored `assets/qrcode-generator.js` matches a known release of [kazuhikoarase/qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) and has not been tampered with.
 
@@ -203,6 +217,7 @@ Reviewers should verify the vendored `assets/qrcode-generator.js` matches a know
 - [ ] Theme settings read from global `settings` object (theme component convention).
 - [ ] Custom icon sprite registered and referenced consistently.
 - [ ] Modal DOM is removed on close; no duplicate listeners or leaked `keydown` handlers.
+- [ ] PNG export (canvas conversion, clipboard, download) works on target browsers over HTTPS.
 - [ ] SCSS uses Discourse CSS variables and does not break dark/light themes.
 - [ ] `minimum_discourse_version` in `about.json` matches APIs actually used (≥ 3.4.0).
 
@@ -211,7 +226,7 @@ Reviewers should verify the vendored `assets/qrcode-generator.js` matches a know
 1. Clone the repository.
 2. Install as a theme component in a local Discourse instance (git URL or symlink into the theme path).
 3. Run Discourse in development mode; JavaScript and SCSS changes hot-reload.
-4. Test on a topic with: plain links, oneboxes, many links, internal-only setting, and mobile viewport.
+4. Test on a topic with: plain links, oneboxes, many links, internal-only setting, mobile viewport, and PNG copy/download actions.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution workflow and commit conventions.
 
