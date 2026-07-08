@@ -20,7 +20,7 @@ export default class LinkQRCodeButton extends Component {
 
   @action
   openModal() {
-    openQRCodeModal(this.links);
+    openQRCodeModal(getLinksForPost(this.args.post));
   }
 
   <template>

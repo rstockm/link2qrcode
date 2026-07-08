@@ -13,18 +13,17 @@ export function hasLinksForPost(post) {
 }
 
 export function getLinksForPost(post) {
-  const cooked = post?.cooked;
-
-  if (!cooked) {
+  if (!post) {
     return [];
   }
 
-  const documentFragment = new DOMParser().parseFromString(cooked, "text/html");
-  const links = Array.from(
-    documentFragment.body.querySelectorAll("a[href]:not(.mention):not(.hashtag)")
-  );
+  const links = deduplicateLinks([
+    ...getLinksFromLinkCounts(post),
+    ...getLinksFromCooked(post),
+    ...getLinksFromDOM(post),
+  ]);
 
-  return collectValidLinks(links).slice(0, MAX_QR_LINKS);
+  return links.slice(0, MAX_QR_LINKS);
 }
 
 export async function openQRCodeModal(links) {
@@ -37,6 +36,137 @@ export async function openQRCodeModal(links) {
   }
 
   renderQRCodeModal(links);
+}
+
+function getLinksFromLinkCounts(post) {
+  const linkCounts = post.link_counts;
+
+  if (!linkCounts?.length) {
+    return [];
+  }
+
+  const showExternalOnly = Boolean(settings.qr_code_show_external_only);
+
+  return linkCounts.reduce((links, link) => {
+    if (link.reflection) {
+      return links;
+    }
+
+    const linkData = normalizeLink(link.url, link.title, showExternalOnly);
+
+    if (linkData) {
+      links.push(linkData);
+    }
+
+    return links;
+  }, []);
+}
+
+function getLinksFromCooked(post) {
+  const cooked = post.cooked;
+
+  if (!cooked) {
+    return [];
+  }
+
+  const documentFragment = new DOMParser().parseFromString(cooked, "text/html");
+  const showExternalOnly = Boolean(settings.qr_code_show_external_only);
+  const links = [];
+
+  documentFragment.body
+    .querySelectorAll("a[href]:not(.mention):not(.hashtag)")
+    .forEach((anchor) => {
+      const linkData = getLinkDataFromAnchor(anchor, showExternalOnly);
+
+      if (linkData) {
+        links.push(linkData);
+      }
+    });
+
+  documentFragment.body.querySelectorAll("[data-onebox-src]").forEach((onebox) => {
+    const linkData = normalizeLink(
+      onebox.getAttribute("data-onebox-src"),
+      onebox.querySelector(".source")?.textContent?.trim(),
+      showExternalOnly
+    );
+
+    if (linkData) {
+      links.push(linkData);
+    }
+  });
+
+  return links;
+}
+
+function getLinksFromDOM(post) {
+  const cookedElement =
+    document.querySelector(`#post_${post.id} .cooked`) ||
+    document.querySelector(`[data-post-id="${post.id}"] .cooked`) ||
+    document.querySelector(`#post_${post.post_number} .cooked`);
+
+  if (!cookedElement) {
+    return [];
+  }
+
+  const showExternalOnly = Boolean(settings.qr_code_show_external_only);
+  const links = [];
+
+  cookedElement
+    .querySelectorAll("a[href]:not(.mention):not(.hashtag)")
+    .forEach((anchor) => {
+      const linkData = getLinkDataFromAnchor(anchor, showExternalOnly);
+
+      if (linkData) {
+        links.push(linkData);
+      }
+    });
+
+  cookedElement.querySelectorAll("[data-onebox-src]").forEach((onebox) => {
+    const linkData = normalizeLink(
+      onebox.getAttribute("data-onebox-src"),
+      onebox.querySelector(".source")?.textContent?.trim(),
+      showExternalOnly
+    );
+
+    if (linkData) {
+      links.push(linkData);
+    }
+  });
+
+  return links;
+}
+
+function getLinkDataFromAnchor(anchor, showExternalOnly) {
+  return normalizeLink(anchor.getAttribute("href"), anchor.textContent.trim(), showExternalOnly);
+}
+
+function normalizeLink(href, text, showExternalOnly) {
+  const trimmedHref = href?.trim();
+
+  if (!trimmedHref || trimmedHref.startsWith("#") || trimmedHref.length > MAX_URL_LENGTH) {
+    return null;
+  }
+
+  let url;
+
+  try {
+    url = new URL(trimmedHref, window.location.href);
+  } catch {
+    return null;
+  }
+
+  if (!["http:", "https:"].includes(url.protocol)) {
+    return null;
+  }
+
+  if (showExternalOnly && url.hostname === window.location.hostname) {
+    return null;
+  }
+
+  return {
+    text: text || url.href,
+    url: url.href,
+  };
 }
 
 function ensureQRCodeLibrary() {
@@ -108,49 +238,6 @@ function renderQRCodeModal(links) {
   document.body.append(modal);
 
   setTimeout(() => closeButton.focus(), 100);
-}
-
-function collectValidLinks(links) {
-  const showExternalOnly = Boolean(settings.qr_code_show_external_only);
-
-  return links.reduce((validLinks, link) => {
-    const linkData = getLinkData(link, showExternalOnly);
-
-    if (linkData) {
-      validLinks.push(linkData);
-    }
-
-    return validLinks;
-  }, []);
-}
-
-function getLinkData(link, showExternalOnly) {
-  const href = link.getAttribute("href")?.trim();
-
-  if (!href || href.startsWith("#") || href.length > MAX_URL_LENGTH) {
-    return null;
-  }
-
-  let url;
-
-  try {
-    url = new URL(href, window.location.href);
-  } catch {
-    return null;
-  }
-
-  if (!["http:", "https:"].includes(url.protocol)) {
-    return null;
-  }
-
-  if (showExternalOnly && url.hostname === window.location.hostname) {
-    return null;
-  }
-
-  return {
-    text: link.textContent.trim() || url.href,
-    url: url.href,
-  };
 }
 
 function deduplicateLinks(links) {
