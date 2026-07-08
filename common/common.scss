@@ -1,42 +1,3 @@
-// Container für den Button am Ende des Posts
-.qr-code-button-container {
-  margin-top: 1em;
-  padding-top: 0.5em;
-  border-top: 1px solid var(--primary-low);
-  display: flex;
-  justify-content: flex-start;
-}
-
-// QR-Code Trigger Button
-.qr-code-trigger-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5em;
-  padding: 0.5em 1em;
-  font-size: 0.875em;
-  background-color: var(--primary-low);
-  color: var(--primary);
-  border: 1px solid var(--primary-low-mid);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background-color: var(--primary-low-mid);
-    border-color: var(--primary-medium);
-  }
-
-  &:active {
-    transform: translateY(1px);
-  }
-
-  svg {
-    width: 14px;
-    height: 14px;
-    fill: currentColor;
-  }
-}
-
 // Modal Overlay
 .qr-code-modal {
   position: fixed;
@@ -243,8 +204,3 @@
   }
 }
 
-// Dark Mode Optimierungen
-.discourse-no-touch .qr-code-trigger-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}

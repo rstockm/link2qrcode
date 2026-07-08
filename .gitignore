@@ -23,6 +23,8 @@ Temporary Items
 .apdisk
 
 # Editor directories and files
+.cursor/
+.specstory/
 .vscode
 .idea
 *.swp
