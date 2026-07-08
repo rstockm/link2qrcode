@@ -74,22 +74,35 @@ Die Theme Component bietet verschiedene Einstellungsmöglichkeiten:
 Nach der Installation und Aktivierung:
 
 1. Erstelle einen neuen Post oder öffne einen existierenden Post mit Links
-2. Am Ende des Posts erscheint automatisch ein Button "Links als QR-Codes anzeigen (X)"
-   - X = Anzahl der gefundenen Links
-3. Klicke auf den Button, um ein Modal mit allen QR-Codes zu öffnen
-4. Jeder QR-Code wird mit dem zugehörigen Link-Text und der URL angezeigt
+2. Im **Post-Aktionsmenü** (neben dem Link-kopieren-Icon) erscheint ein QR-Code-Icon, wenn der Post mindestens einen gültigen Link enthält
+3. Klicke auf das Icon, um ein Modal mit allen QR-Codes zu öffnen
+4. Jeder QR-Code wird als Bild mit zugehörigem Link-Text und URL angezeigt
+5. **QR-Code kopieren oder speichern:**
+   - **Rechtsklick** auf das QR-Bild → „Bild kopieren“ oder „Bild speichern unter …“ (funktioniert in allen gängigen Browsern)
+   - **In Zwischenablage kopieren** — Button unter dem QR-Code (PNG; benötigt HTTPS)
+   - **Als PNG speichern** — Download als `qr-code-{hostname}.png`
 
 ## Fehlerbehebung
 
 ### Button erscheint nicht
 
-**Problem**: Der Button wird am Ende eines Posts nicht angezeigt
+**Problem**: Das QR-Code-Icon wird im Post-Menü nicht angezeigt
 
 **Lösungen**:
 - Prüfe, ob der Post tatsächlich Links enthält
 - Wenn "Nur externe Links" aktiviert ist: Prüfe, ob externe Links vorhanden sind
+- Stelle sicher, dass die Theme Component dem aktiven Theme zugewiesen ist
 - Lösche den Browser-Cache und lade die Seite neu
 - Prüfe in den Browser-Entwicklertools (F12) die Konsole auf Fehlermeldungen
+
+### Kopieren in Zwischenablage schlägt fehl
+
+**Problem**: Der Button „In Zwischenablage kopieren“ funktioniert nicht
+
+**Lösungen**:
+- Rechtsklick auf das QR-Bild → „Bild kopieren“ (funktioniert ohne HTTPS)
+- Alternativ „Als PNG speichern“ verwenden
+- Forum muss für die Clipboard-API über HTTPS erreichbar sein
 
 ### QR-Codes werden nicht generiert
 
@@ -135,6 +148,6 @@ Bei Problemen oder Fragen:
 
 ## Systemanforderungen
 
-- Discourse Version: 3.0.0 oder höher
+- Discourse Version: 3.4.0 oder höher (Glimmer Post-Menü)
 - Moderne Browser mit JavaScript-Unterstützung
 - Keine zusätzlichen Server-Anforderungen (alles läuft client-seitig)

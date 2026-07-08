@@ -261,22 +261,20 @@ function createQRCodeItem(link) {
   const linkInfo = createElement("div", "qr-link-info");
   const linkTitle = createElement("div", "qr-link-title");
   const linkUrl = createElement("div", "qr-link-url");
-  let svg = null;
+  let qrImage = null;
 
   try {
     const qr = qrcode(0, getErrorCorrectionLevel());
     qr.addData(link.url);
     qr.make();
 
-    qrCanvas.innerHTML = qr.createSvgTag(4, 2);
-
-    svg = qrCanvas.querySelector("svg");
     const qrSize = getQRCodeSize();
-
-    if (svg) {
-      svg.setAttribute("width", `${qrSize}px`);
-      svg.setAttribute("height", `${qrSize}px`);
-    }
+    qrImage = createElement("img", "qr-code-image");
+    qrImage.src = qr.createDataURL(4, 2);
+    qrImage.width = qrSize;
+    qrImage.height = qrSize;
+    qrImage.alt = `QR-Code: ${link.text}`;
+    qrCanvas.append(qrImage);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("Fehler beim Generieren des QR-Codes:", error);
@@ -289,8 +287,8 @@ function createQRCodeItem(link) {
 
   qrCodeContainer.append(qrCanvas);
 
-  if (svg) {
-    qrCodeContainer.append(createQRCodeActions(svg, link));
+  if (qrImage) {
+    qrCodeContainer.append(createQRCodeActions(qrImage, link));
   }
 
   linkInfo.append(linkTitle);
@@ -301,7 +299,7 @@ function createQRCodeItem(link) {
   return qrItem;
 }
 
-function createQRCodeActions(svg, link) {
+function createQRCodeActions(qrImage, link) {
   const actions = createElement("div", "qr-code-actions");
   const copyButton = createActionButton(
     "In Zwischenablage kopieren",
@@ -316,7 +314,7 @@ function createQRCodeActions(svg, link) {
     setActionButtonState(copyButton, "loading", "Wird kopiert…");
 
     try {
-      const blob = await svgToPngBlob(svg);
+      const blob = await imgToPngBlob(qrImage);
       const copied = await copyPngToClipboard(blob);
 
       if (copied) {
@@ -335,7 +333,7 @@ function createQRCodeActions(svg, link) {
     setActionButtonState(downloadButton, "loading", "Wird gespeichert…");
 
     try {
-      const blob = await svgToPngBlob(svg);
+      const blob = await imgToPngBlob(qrImage);
       downloadPng(blob, getQrFilename(link));
       setActionButtonState(downloadButton, "success", "Gespeichert!");
     } catch (error) {
@@ -374,11 +372,15 @@ function setActionButtonState(button, state, message) {
   }
 }
 
-async function svgToPngBlob(svg) {
-  const qrSize =
-    Number.parseInt(svg.getAttribute("width"), 10) ||
-    Number.parseInt(svg.getAttribute("height"), 10) ||
-    getQRCodeSize();
+async function imgToPngBlob(img) {
+  if (!img.complete) {
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error("Image load failed"));
+    });
+  }
+
+  const qrSize = img.width || getQRCodeSize();
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
 
@@ -388,37 +390,17 @@ async function svgToPngBlob(svg) {
 
   canvas.width = qrSize;
   canvas.height = qrSize;
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, qrSize, qrSize);
+  context.drawImage(img, 0, 0, qrSize, qrSize);
 
-  const svgMarkup = new XMLSerializer().serializeToString(svg);
-  const svgUrl = URL.createObjectURL(
-    new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" })
-  );
+  const blob = await canvasToBlob(canvas, "image/png");
 
-  try {
-    const image = await loadImage(svgUrl);
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, qrSize, qrSize);
-    context.drawImage(image, 0, 0, qrSize, qrSize);
-
-    const blob = await canvasToBlob(canvas, "image/png");
-
-    if (!blob) {
-      throw new Error("PNG conversion failed");
-    }
-
-    return blob;
-  } finally {
-    URL.revokeObjectURL(svgUrl);
+  if (!blob) {
+    throw new Error("PNG conversion failed");
   }
-}
 
-function loadImage(url) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("SVG render failed"));
-    image.src = url;
-  });
+  return blob;
 }
 
 function canvasToBlob(canvas, type) {
